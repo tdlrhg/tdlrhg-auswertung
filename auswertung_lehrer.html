@@ -285,7 +285,7 @@ function aktualisieren() {
       <table class="auswertung-tabelle">
         <thead><tr>
           <th style="min-width:140px;">Name</th>
-          ${kompIds.map(id => `<th title="${escHtml(kompLabels[id])}" style="height:110px;white-space:nowrap;vertical-align:bottom;padding:0 4px 8px;"><div style="transform:rotate(-45deg);transform-origin:bottom left;width:1.2rem;font-size:0.72rem;line-height:1.3;margin-bottom:4px;">${escHtml(kompLabels[id])}</div></th>`).join('')}
+          ${kompIds.map(id => `<th title="${escHtml(kompLabels[id])}" style="height:110px;white-space:nowrap;vertical-align:bottom;padding:0 2px 8px;width:36px;"><div style="transform:rotate(-45deg);transform-origin:bottom left;width:1.2rem;font-size:0.72rem;line-height:1.3;margin-bottom:4px;">${escHtml(kompLabels[id])}</div></th>`).join('')}
 
         </tr></thead>
         <tbody>`;
@@ -299,7 +299,7 @@ function aktualisieren() {
           const s = statusMap[id] || 'offen';
           const emoji = s === 'gruen' ? '🟢' : s === 'gelb' ? '🟡' : s === 'rot' ? '🔴' : '⚪';
           const title = s === 'gruen' ? 'Bestanden' : s === 'gelb' ? 'Fast' : s === 'rot' ? 'Nicht bestanden' : 'Nicht versucht';
-          return `<td style="text-align:center;font-size:1.1rem;" title="${title}">${emoji}</td>`;
+          return `<td style="text-align:center;font-size:1rem;padding:8px 2px;width:36px;" title="${title}">${emoji}</td>`;
         }).join('')}
 
       </tr>`;
@@ -309,6 +309,8 @@ function aktualisieren() {
   });
 
   container.innerHTML = html;
+  // In localStorage speichern
+  try { localStorage.setItem('auswertung_daten', JSON.stringify(alleEintraege)); } catch(e) {}
 }
 
 function filterSetzen(filter, btn) {
@@ -321,6 +323,7 @@ function filterSetzen(filter, btn) {
 function alleLoeschen() {
   if (!confirm('Alle eingelesenen Daten löschen?')) return;
   alleEintraege = [];
+  try { localStorage.removeItem('auswertung_daten'); } catch(e) {}
   document.getElementById('stats-reihe').classList.add('versteckt');
   aktualisieren();
 }
@@ -344,6 +347,15 @@ function csvExport() {
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// Beim Start aus localStorage laden
+try {
+  const gespeichert = localStorage.getItem('auswertung_daten');
+  if (gespeichert) {
+    alleEintraege = JSON.parse(gespeichert);
+    aktualisieren();
+  }
+} catch(e) {}
 
 const upload = document.getElementById('upload-bereich');
 upload.addEventListener('dragover', e => { e.preventDefault(); upload.style.borderColor = 'var(--primary)'; });

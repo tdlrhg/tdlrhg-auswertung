@@ -239,7 +239,6 @@ function dateienEinlesen(files) {
 }
 
 function aktualisieren() {
-  // Stats
   const namen = new Set(alleEintraege.map(e => e.name));
   let gruen = 0, gelb = 0;
   alleEintraege.forEach(e => e.kompetenzen.forEach(k => {
@@ -250,47 +249,66 @@ function aktualisieren() {
   document.getElementById('stat-sitzungen').textContent = alleEintraege.length;
   document.getElementById('stat-gruen').textContent = gruen;
   document.getElementById('stat-gelb').textContent = gelb;
-
   if (alleEintraege.length > 0) document.getElementById('stats-reihe').classList.remove('versteckt');
 
-  // Filter
-  let gefiltert = alleEintraege;
-  if (aktiverFilter === 'gruen') gefiltert = alleEintraege.filter(e => e.kompetenzen.some(k => k.status === 'gruen'));
-  if (aktiverFilter === 'gelb') gefiltert = alleEintraege.filter(e => e.kompetenzen.some(k => k.status === 'gelb'));
-
+  // Alle Themen ermitteln
+  const themen = [...new Set(alleEintraege.map(e => e.thema))].sort();
   const container = document.getElementById('tabellen-inhalt');
-  if (gefiltert.length === 0) {
-    container.innerHTML = `<div class="leer-hinweis"><span>🔍</span>Keine Einträge für diesen Filter.</div>`;
+
+  if (alleEintraege.length === 0) {
+    container.innerHTML = `<div class="leer-hinweis"><span>📂</span>Noch keine Dateien hochgeladen.</div>`;
     return;
   }
 
-  const sortiert = [...gefiltert].sort((a, b) => a.name.localeCompare(b.name) || a.thema.localeCompare(b.thema));
+  let html = '';
 
-  const table = document.createElement('table');
-  table.className = 'auswertung-tabelle';
-  table.innerHTML = `<thead><tr>
-    <th>Name</th><th>Thema</th><th>Kompetenzen</th><th>Datum</th>
-  </tr></thead>`;
+  themen.forEach(thema => {
+    const eintraege = alleEintraege.filter(e => e.thema === thema);
 
-  const tbody = document.createElement('tbody');
-  sortiert.forEach(e => {
-    const tr = document.createElement('tr');
-    const kBadges = e.kompetenzen.map(k => {
-      const cls = k.status === 'gruen' ? 'gruen' : k.status === 'gelb' ? 'gelb' : k.status === 'rot' ? 'rot' : 'offen';
-      const dot = `<span class="status-dot dot-${cls}"></span>`;
-      return `<span class="k-badge ${cls}">${dot}${escHtml(k.schlagwort)}</span>`;
-    }).join('');
-    tr.innerHTML = `
-      <td class="name-zelle">${escHtml(e.name)}</td>
-      <td class="thema-zelle">${escHtml(e.thema)}</td>
-      <td><div class="kompetenz-liste">${kBadges}</div></td>
-      <td class="datum-zelle">${escHtml(e.datum)}</td>
-    `;
-    tbody.appendChild(tr);
+    // Alle Kompetenzen dieses Themas sammeln (Reihenfolge erhalten)
+    const kompIds = [];
+    const kompLabels = {};
+    eintraege.forEach(e => e.kompetenzen.forEach(k => {
+      if (!kompIds.includes(k.id)) { kompIds.push(k.id); kompLabels[k.id] = k.schlagwort; }
+    }));
+
+    // Schüler: letzter Eintrag pro Name (neuestes Datum)
+    const schuelerMap = {};
+    eintraege.forEach(e => {
+      if (!schuelerMap[e.name] || e.datum > schuelerMap[e.name].datum) schuelerMap[e.name] = e;
+    });
+    const schuelerListe = Object.values(schuelerMap).sort((a,b) => a.name.localeCompare(b.name));
+
+    html += `<div style="margin-bottom:40px;">
+      <div style="font-size:1rem;font-weight:800;color:var(--primary);margin-bottom:16px;">${escHtml(thema)}</div>
+      <div style="overflow-x:auto;">
+      <table class="auswertung-tabelle">
+        <thead><tr>
+          <th style="min-width:140px;">Name</th>
+          ${kompIds.map(id => `<th title="${escHtml(kompLabels[id])}" style="min-width:90px;font-size:0.72rem;max-width:100px;white-space:normal;line-height:1.3;">${escHtml(kompLabels[id])}</th>`).join('')}
+          <th style="min-width:90px;">Datum</th>
+        </tr></thead>
+        <tbody>`;
+
+    schuelerListe.forEach(e => {
+      const statusMap = {};
+      e.kompetenzen.forEach(k => statusMap[k.id] = k.status);
+      html += `<tr>
+        <td class="name-zelle">${escHtml(e.name)}</td>
+        ${kompIds.map(id => {
+          const s = statusMap[id] || 'offen';
+          const emoji = s === 'gruen' ? '🟢' : s === 'gelb' ? '🟡' : s === 'rot' ? '🔴' : '⚪';
+          const title = s === 'gruen' ? 'Bestanden' : s === 'gelb' ? 'Fast' : s === 'rot' ? 'Nicht bestanden' : 'Nicht versucht';
+          return `<td style="text-align:center;font-size:1.1rem;" title="${title}">${emoji}</td>`;
+        }).join('')}
+        <td class="datum-zelle">${escHtml(e.datum)}</td>
+      </tr>`;
+    });
+
+    html += `</tbody></table></div></div>`;
   });
-  table.appendChild(tbody);
-  container.innerHTML = '';
-  container.appendChild(table);
+
+  container.innerHTML = html;
 }
 
 function filterSetzen(filter, btn) {

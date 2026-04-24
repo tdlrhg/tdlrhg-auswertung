@@ -285,8 +285,8 @@ function aktualisieren() {
       <table class="auswertung-tabelle">
         <thead><tr>
           <th style="min-width:140px;">Name</th>
-          ${kompIds.map(id => `<th title="${escHtml(kompLabels[id])}" style="min-width:90px;font-size:0.72rem;max-width:100px;white-space:normal;line-height:1.3;">${escHtml(kompLabels[id])}</th>`).join('')}
-          <th style="min-width:90px;">Datum</th>
+          ${kompIds.map(id => `<th title="${escHtml(kompLabels[id])}" style="height:110px;white-space:nowrap;vertical-align:bottom;padding:0 4px 8px;"><div style="transform:rotate(-45deg);transform-origin:bottom left;width:1.2rem;font-size:0.72rem;line-height:1.3;margin-bottom:4px;">${escHtml(kompLabels[id])}</div></th>`).join('')}
+
         </tr></thead>
         <tbody>`;
 
@@ -294,14 +294,14 @@ function aktualisieren() {
       const statusMap = {};
       e.kompetenzen.forEach(k => statusMap[k.id] = k.status);
       html += `<tr>
-        <td class="name-zelle">${escHtml(e.name)}</td>
+        <td class="name-zelle" title="Letzte Sitzung: ${escHtml(e.datum)}" style="cursor:default;">${escHtml(e.name)}</td>
         ${kompIds.map(id => {
           const s = statusMap[id] || 'offen';
           const emoji = s === 'gruen' ? '🟢' : s === 'gelb' ? '🟡' : s === 'rot' ? '🔴' : '⚪';
           const title = s === 'gruen' ? 'Bestanden' : s === 'gelb' ? 'Fast' : s === 'rot' ? 'Nicht bestanden' : 'Nicht versucht';
           return `<td style="text-align:center;font-size:1.1rem;" title="${title}">${emoji}</td>`;
         }).join('')}
-        <td class="datum-zelle">${escHtml(e.datum)}</td>
+
       </tr>`;
     });
 
